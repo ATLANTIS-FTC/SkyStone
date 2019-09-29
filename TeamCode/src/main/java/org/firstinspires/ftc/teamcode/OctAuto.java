@@ -1,31 +1,3 @@
-/* Copyright (c) 2017 FIRST. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted (subject to the limitations in the disclaimer below) provided that
- * the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this list
- * of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice, this
- * list of conditions and the following disclaimer in the documentation and/or
- * other materials provided with the distribution.
- *
- * Neither the name of FIRST nor the names of its contributors may be used to endorse or
- * promote products derived from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
- * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 
 package org.firstinspires.ftc.teamcode;
 
@@ -119,6 +91,94 @@ public abstract class OctAuto extends LinearOpMode {
         waitForStart();
     }
 
+    public void encoderTurn(double baseSpeed, double leftAmount, double rightAmount) {
+        int newFrontLeftTarget;
+        int newFrontRightTarget;
+        int newRearLeftTarget;
+        int newRearRightTarget;
+        int greater = 0;
+        double speedRatio = 0;
+
+        // Ensure that the opmode is still active
+        if (opModeIsActive()) {
+
+            if (rightAmount > leftAmount) {
+                greater = 1;
+            } else if (rightAmount < leftAmount) {
+                greater = -1;
+            }
+
+            if (greater == 1) {
+                speedRatio = rightAmount/leftAmount;
+            } else if (greater == -1) {
+                speedRatio = leftAmount/rightAmount;
+            }
+
+            // Determine new target position, and pass to motor controller
+            newFrontLeftTarget = robot.frontLeft.getCurrentPosition() + (int)(leftAmount);// * COUNTS_PER_INCH);
+            newFrontRightTarget = robot.frontRight.getCurrentPosition() + (int)(rightAmount);// * COUNTS_PER_INCH);
+            newRearLeftTarget = robot.frontLeft.getCurrentPosition() + (int)(leftAmount);// * COUNTS_PER_INCH);
+            newRearRightTarget = robot.frontRight.getCurrentPosition() + (int)(rightAmount);// * COUNTS_PER_INCH);
+            robot.frontLeft.setTargetPosition(newFrontLeftTarget);
+            robot.frontRight.setTargetPosition(newFrontRightTarget);
+            robot.backLeft.setTargetPosition(newRearLeftTarget);
+            robot.backRight.setTargetPosition(newRearRightTarget);
+
+            // Turn On RUN_TO_POSITION
+            robot.frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            // reset the timeout time and start motion.
+            runtime.reset();
+            if (greater == 1) {
+                robot.frontLeft.setPower(Math.abs(baseSpeed));
+                robot.frontRight.setPower(Math.abs(baseSpeed) * speedRatio);
+                robot.backLeft.setPower(Math.abs(baseSpeed));
+                robot.backRight.setPower(Math.abs(baseSpeed) * speedRatio);
+            } else if (greater == -1) {
+                robot.frontLeft.setPower(Math.abs(baseSpeed) * speedRatio);
+                robot.frontRight.setPower(Math.abs(baseSpeed));
+                robot.backLeft.setPower(Math.abs(baseSpeed) * speedRatio);
+                robot.backRight.setPower(Math.abs(baseSpeed));
+            }
+
+            // keep looping while we are still active, and there is time left, and both motors are running.
+            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
+            // its target position, the motion will stop.  This is "safer" in the event that the robot will
+            // always end the motion as soon as possible.
+            // However, if you require that BOTH motors have finished their moves before the robot continues
+            // onto the next step, use (isBusy() || isBusy()) in the loop test.
+            while (opModeIsActive() &&
+                    (robot.frontLeft.isBusy() || robot.frontRight.isBusy())) {
+
+                // Display it for the driver.
+                telemetry.addData("yeet", robot.frontLeft.getCurrentPosition());
+                telemetry.addData("Path1",  "Running to %7d :%7d", newFrontLeftTarget,  newFrontRightTarget);
+                telemetry.addData("Path2",  "Running at %7d :%7d",
+                        robot.frontLeft.getCurrentPosition(),
+                        robot.frontRight.getCurrentPosition());
+                telemetry.update();
+            }
+
+            // Stop all motion;
+            robot.frontLeft.setPower(0);
+            robot.frontRight.setPower(0);
+            robot.backLeft.setPower(0);
+            robot.backRight.setPower(0);
+
+            // Turn off RUN_TO_POSITION
+            robot.frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            robot.backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            sleep(250);   // optional pause after each move
+        }
+    }
+
+
     public void encoderDrive(double speed, double leftEncoder, double rightEncoder, double timeoutS) {
         robot.backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -154,6 +214,60 @@ public abstract class OctAuto extends LinearOpMode {
             robot.frontRight.setPower(Math.abs(speed));
             robot.backLeft.setPower(Math.abs(speed));
             robot.backRight.setPower(Math.abs(speed));
+
+            while (opModeIsActive() &&
+                    (runtime.seconds() < timeoutS) &&
+                    (robot.frontLeft.isBusy() || robot.backLeft.isBusy() || robot.frontRight.isBusy() || robot.backRight.isBusy())) {
+
+                // Display it for the driver.
+                telemetry.addData("Path1",  "Running to %7d :%7d", newFrontLeftTarget,  newFrontRightTarget);
+                telemetry.addData("Path2",  "Running at %7d :%7d",
+                        robot.frontLeft.getCurrentPosition(),
+                        robot.frontRight.getCurrentPosition());
+                telemetry.update();
+            }
+
+        }
+    }
+
+    public void proportionalDrive(double speed, double leftEncoder, double rightEncoder, double timeoutS) {
+        robot.backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.frontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        int newFrontLeftTarget;
+        int newFrontRightTarget;
+        int newBackLeftTarget;
+        int newBackRightTarget;
+
+        // Ensure that the opmode is still active
+        if (opModeIsActive()) {
+
+            // Determine new target position, and pass to motor controller
+            newFrontLeftTarget = robot.frontLeft.getCurrentPosition() + (int)(leftEncoder);// * COUNTS_PER_INCH);
+            newFrontRightTarget = robot.frontRight.getCurrentPosition() + (int)(rightEncoder);// * COUNTS_PER_INCH);
+            newBackLeftTarget = robot.frontLeft.getCurrentPosition() + (int)(leftEncoder);// * COUNTS_PER_INCH);
+            newBackRightTarget = robot.frontRight.getCurrentPosition() + (int)(rightEncoder);// * COUNTS_PER_INCH);
+            robot.frontLeft.setTargetPosition(newFrontLeftTarget);
+            robot.frontRight.setTargetPosition(newFrontRightTarget);
+            robot.backLeft.setTargetPosition(newBackLeftTarget);
+            robot.backRight.setTargetPosition(newBackRightTarget);
+
+            // Turn On RUN_TO_POSITION
+            robot.frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            robot.backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            double progress = robot.frontLeft.getCurrentPosition()/newFrontLeftTarget;
+            double pSpeed = speed * progress;
+
+            // reset the timeout time and start motion.
+            runtime.reset();
+            robot.frontLeft.setPower(Math.abs(pSpeed));
+            robot.frontRight.setPower(Math.abs(pSpeed));
+            robot.backLeft.setPower(Math.abs(pSpeed));
+            robot.backRight.setPower(Math.abs(pSpeed));
 
             while (opModeIsActive() &&
                     (runtime.seconds() < timeoutS) &&
