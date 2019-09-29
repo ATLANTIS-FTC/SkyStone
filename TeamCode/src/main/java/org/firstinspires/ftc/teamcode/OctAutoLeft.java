@@ -26,9 +26,9 @@ import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import java.util.List;
 import java.util.Locale;
 
-@Autonomous(name="OctAuto", group="Autos")
+@Autonomous(name="OctAutoLeft", group="Autos")
 //@Disabled
-public abstract class OctAuto extends LinearOpMode {
+public abstract class OctAutoLeft extends LinearOpMode {
 
     OctHardware robot = new OctHardware();
     private ElapsedTime runtime = new ElapsedTime();
