@@ -5,6 +5,7 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Func;
@@ -19,8 +20,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 import java.util.Locale;
 
 @TeleOp
-//@Disabled //DO NOT ENABLE UNLESS YOU HAVE ADI'S PERMISSION
-public class EncoderOp extends LinearOpMode {
+//@Disabled
+public class Intake extends LinearOpMode {
 
     OctHardware robot = new OctHardware();
     private ElapsedTime runtime = new ElapsedTime();
@@ -68,35 +69,99 @@ public class EncoderOp extends LinearOpMode {
         // Start the logging of measured acceleration
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
 
-        double fLStart = robot.frontLeft.getCurrentPosition();
-        double fRStart = robot.frontRight.getCurrentPosition();
-        double rLStart = robot.backLeft.getCurrentPosition();
-        double rRStart = robot.backRight.getCurrentPosition();
-
-        double imuStart = angles.firstAngle;
+        boolean slowMode = false;
+        boolean reverse = false;
+        boolean open = false;
+        int pivotPos = 0;
 
         while (opModeIsActive()) {
 
-            //gamepad 1 (xbox)
+            //gamepad 1
             double throttle = ((gamepad1.right_trigger) - (gamepad1.left_trigger));
             double steering = gamepad1.left_stick_x;
+
+            if (gamepad1.a) {
+                slowMode = !slowMode;
+                while (gamepad1.a);
+            }
 
             double rPower = throttle - steering;
             double lPower = throttle + steering;
 
-            //gamepad 1 (xbox) setPower
-            robot.frontLeft.setPower(-lPower/20);
-            robot.frontRight.setPower(rPower/20);
-            robot.backLeft.setPower(lPower/20);
-            robot.backRight.setPower(-rPower/20);
+            if (slowMode == true) {
+                if (steering != 0) {
+                    lPower /= 2.5;
+                    rPower /= 2.5;
+                } else {
+                    lPower /= 2;
+                    rPower /= 2;
+                }
+            }
 
-            telemetry.addData("Delta IMU", (angles.firstAngle - imuStart));
-            telemetry.addData("Delta Front Left", robot.frontLeft.getCurrentPosition() - fLStart);
-            telemetry.addData("Delta Front Right", robot.frontRight.getCurrentPosition() - fRStart);
-            telemetry.addData("Delta Rear Left", robot.backLeft.getCurrentPosition() - rLStart);
-            telemetry.addData("Delta Rear Right", robot.backRight.getCurrentPosition() - rRStart);
+            if (gamepad1.right_bumper) {
+                lPower *= 2;
+                rPower *= 2;
+            }
+
+            //gamepad 2
+            double pivot = -gamepad2.left_stick_y;
+            double intake = ((-gamepad2.right_trigger) + (gamepad2.left_trigger));
+
+            if (gamepad2.right_bumper) {
+                pivot *= 3;
+            }
+
+            if (gamepad2.b) {
+                robot.intakeFlipperLeft.setPosition(.5);
+                robot.intakeFlipperRight.setPosition(.8);
+            }
+
+            if (gamepad2.y) {
+                robot.intakeFlipperLeft.setPosition(.6);
+                robot.intakeFlipperRight.setPosition(.9);
+            }
+
+            if (gamepad2.x) {
+                robot.intakeFlipperLeft.setPosition(.2);
+                robot.intakeFlipperRight.setPosition(.5);
+            }
+
+            if (gamepad2.dpad_up) {
+                robot.openerRight.setPosition(.2);
+                robot.openerLeft.setPosition(.15);
+            }
+
+            if (gamepad2.dpad_down) {
+                robot.openerRight.setPosition(0);
+                robot.openerLeft.setPosition(0);
+            }
+
+            if (gamepad2.dpad_left) {
+                robot.foundationMover.setPosition(1);
+            }
+
+            if (gamepad2.dpad_right) {
+                robot.foundationMover.setPosition(.5);
+            }
+
+
+            //gamepad 1 setPower
+            robot.frontLeft.setPower(-lPower/3);
+            robot.frontRight.setPower(rPower/3);
+            robot.backLeft.setPower(lPower/3);
+            robot.backRight.setPower(-rPower/3);
+
+            telemetry.addData("lpower", lPower);
+            telemetry.addData("rpower", rPower);
             telemetry.addData("Status", "Running");
+            telemetry.addData("slowmode", slowMode);
             telemetry.update();
+
+            //gamepad 2 setPower
+            robot.intakeRight.setPower(intake);
+            robot.intakeLeft.setPower(-intake);
+            robot.pivot.setPower(pivot/4);
+
         }
     }
 
@@ -114,7 +179,7 @@ public class EncoderOp extends LinearOpMode {
         }
         });
 
-        /*telemetry.addLine()
+        telemetry.addLine()
                 .addData("status", new Func<String>() {
                     @Override public String value() {
                         return imu.getSystemStatus().toShortString();
@@ -125,8 +190,6 @@ public class EncoderOp extends LinearOpMode {
                         return imu.getCalibrationStatus().toString();
                     }
                 });
-
-        */
 
         telemetry.addLine()
                 .addData("heading", new Func<String>() {
@@ -146,6 +209,27 @@ public class EncoderOp extends LinearOpMode {
                     }
                 });
 
+        telemetry.addLine()
+                .addData("grvty", new Func<String>() {
+                    @Override public String value() {
+                        return gravity.toString();
+                    }
+                })
+                .addData("mag", new Func<String>() {
+                    @Override public String value() {
+                        return String.format(Locale.getDefault(), "%.3f",
+                                Math.sqrt(gravity.xAccel*gravity.xAccel
+                                        + gravity.yAccel*gravity.yAccel
+                                        + gravity.zAccel*gravity.zAccel));
+                    }
+                });
+
+        telemetry.addLine()
+                .addData("Debugging: ", new Func<String>() {
+                    @Override public String value() {
+                        return formatAngle(angles.angleUnit, angles.thirdAngle);
+                    }
+                });
     }
 
     String formatAngle(AngleUnit angleUnit, double angle) {
@@ -156,4 +240,3 @@ public class EncoderOp extends LinearOpMode {
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 }
-

@@ -1,0 +1,289 @@
+PID MOVEMENT
+
+//    public void experimentalTurn(double speed, double minSpeed, double bearing,int acceptRange/*, double timeoutS*/) {
+//        robot.frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        robot.frontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        robot.backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        robot.backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        robot.frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        robot.frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        robot.backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        robot.backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        double existingHeading = angles.firstAngle;
+//        double percentBearing = bearing * 0.7; //5 //425
+//        double currentHeading = 0;
+//        double trueDeltaHeading = 1;
+//        double deltaHeading = 1;
+//        double gain = 4.4112e-4 + (1.8732e-4 * (Math.log(Math.abs(bearing))));//(0.000002*bearing) + 0.001106; //0.001375; //0.0013 //75
+//        double driveSpeed;
+//        boolean turnDone = false;
+//        boolean timerStart = false;
+//        while (!turnDone && opModeIsActive()) {
+//            if (bearing > 0) {
+//                currentHeading = angles.firstAngle - existingHeading;
+//                trueDeltaHeading = bearing - currentHeading;
+//                deltaHeading = percentBearing - currentHeading;
+//                if (bearing >= 40) {
+//                    if (trueDeltaHeading < 0) {
+//                        break;
+//                    } else if (deltaHeading < 0) {
+//                        driveSpeed = minSpeed;
+//                        if (Math.abs(trueDeltaHeading) <= acceptRange) {
+//                            if (!timerStart) {
+//                                runtime.reset();
+//                                timerStart = true;
+//                            } else if (runtime.seconds() > .2) {
+//                                turnDone = true;
+//                            }
+//                            driveSpeed = 0;
+//                        }
+//                    } else {
+//                        timerStart = false;
+//                        driveSpeed = gain * deltaHeading * speed;
+//                        if (driveSpeed > 1) {
+//                            driveSpeed = 1;
+//                        } else if (driveSpeed < -1) {
+//                            driveSpeed = -1;
+//                        }
+//                    }
+//                    robot.backLeft.setPower(-driveSpeed * 2);
+//                    robot.backRight.setPower(driveSpeed * 2);
+//                } else {
+//                    if (trueDeltaHeading < 0) {
+//                        break;
+//                    } else if (deltaHeading < 0) {
+//                        driveSpeed = minSpeed;
+//                        if (Math.abs(trueDeltaHeading) <= acceptRange) {
+//                            if (!timerStart) {
+//                                runtime.reset();
+//                                timerStart = true;
+//                            } else if (runtime.seconds() > .1) {
+//                                turnDone = true;
+//                            }
+//                            driveSpeed = 0;
+//                        }
+//                    } else {
+//                        timerStart = false;
+//                        driveSpeed = gain * (Math.pow((deltaHeading/bearing),4) * bearing) * speed * 3;
+//                        if (driveSpeed < minSpeed) {
+//                            driveSpeed = minSpeed;
+//                        }
+//                        if (driveSpeed > 1) {
+//                            driveSpeed = 1;
+//                        } else if (driveSpeed < -1) {
+//                            driveSpeed = -1;
+//                        }
+//                    }
+//                    robot.frontLeft.setPower(-driveSpeed);
+//                    robot.backRight.setPower(driveSpeed);
+//                    robot.backLeft.setPower(-driveSpeed);
+//                    robot.backRight.setPower(driveSpeed);
+//                }
+//            } else if (bearing < 0){
+//                currentHeading = angles.firstAngle - existingHeading;
+//                trueDeltaHeading = currentHeading - bearing;
+//                deltaHeading = currentHeading - percentBearing;
+//                if (bearing <= -40) {
+//                    if (trueDeltaHeading < 0) {
+//                        break;
+//                    } else if (deltaHeading < 0) {
+//                        driveSpeed = minSpeed;
+//                        if (Math.abs(trueDeltaHeading) <= acceptRange) {
+//                            if (!timerStart) {
+//                                runtime.reset();
+//                                timerStart = true;
+//                            } else if (runtime.seconds() > .2) {
+//                                turnDone = true;
+//                            }
+//                            driveSpeed = 0;
+//                        }
+//                    } else {
+//                        timerStart = false;
+//                        driveSpeed = gain * deltaHeading * speed;
+//                        if (driveSpeed > 1) {
+//                            driveSpeed = 1;
+//                        } else if (driveSpeed < -1) {
+//                            driveSpeed = -1;
+//                        }
+//                    }
+//                    robot.backLeft.setPower(driveSpeed * 2);
+//                    robot.backRight.setPower(-driveSpeed * 2);
+//                } else {
+//                    if (trueDeltaHeading < 0) {
+//                        break;
+//                    } else if (deltaHeading < 0) {
+//                        driveSpeed = minSpeed;
+//                        if (Math.abs(trueDeltaHeading) <= acceptRange) {
+//                            if (!timerStart) {
+//                                runtime.reset();
+//                                timerStart = true;
+//                            } else if (runtime.seconds() > .1) {
+//                                turnDone = true;
+//                            }
+//                            driveSpeed = 0;
+//                        }
+//                    } else {
+//                        timerStart = false;
+//                        driveSpeed = Math.abs(gain * (Math.pow((deltaHeading/bearing),4) * bearing) * speed * 3);
+//                        if (driveSpeed < minSpeed) {
+//                            driveSpeed = minSpeed;
+//                        }
+//                        if (driveSpeed > 1) {
+//                            driveSpeed = 1;
+//                        } else if (driveSpeed < -1) {
+//                            driveSpeed = -1;
+//                        }
+//                    }
+//                    robot.frontLeft.setPower(driveSpeed);
+//                    robot.backRight.setPower(-driveSpeed);
+//                    robot.backLeft.setPower(driveSpeed);
+//                    robot.backRight.setPower(-driveSpeed);
+//                }
+//            } else {
+//                driveSpeed = 0;
+//            }
+//            telemetry.addData("current", currentHeading);
+//            telemetry.addData("delta", deltaHeading);
+//            telemetry.addData("truedelta", trueDeltaHeading);
+//            telemetry.addData("multipliedDelta", (Math.pow((deltaHeading/bearing),2) * bearing));
+//            telemetry.addData("gain", gain);
+//            telemetry.addData("Left Power", -driveSpeed);
+//            telemetry.addData("Right Power", driveSpeed);
+//            telemetry.addData("BACK Left Power", -driveSpeed * 1.5);
+//            telemetry.addData("BACK Right Power", driveSpeed * 1.5);
+//            telemetry.update();
+//        }
+//        robot.frontLeft.setPower(0);
+//        robot.frontRight.setPower(0);
+//        robot.backLeft.setPower(0);
+//        robot.backRight.setPower(0);
+//    }
+//
+//    public void experimentalDrive(double speed, double encoderAmount, double percentage, double severity) {
+//        robot.frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        robot.frontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        robot.backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        robot.backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//        robot.frontLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        robot.frontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        robot.backLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        robot.backRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//
+//        double startHeading = angles.firstAngle;
+//        double currentHeading;
+//        double deltaHeading;
+//        double averageEncoder;
+//        double deltaEncoder = 1;
+//        double trueDeltaEncoder = 1;
+//        double percentEncoder = encoderAmount * percentage;
+//        double gain = 0.0075;
+//        double leftSpeed;
+//        double rightSpeed;
+//        boolean turnDone = false;
+//        boolean timerStart = false;
+//        while (!turnDone && opModeIsActive()) {
+//            currentHeading = angles.firstAngle;
+//            deltaHeading = currentHeading - startHeading;
+//            averageEncoder = ((robot.frontLeft.getCurrentPosition() + robot.frontRight.getCurrentPosition() + robot.backLeft.getCurrentPosition() + robot.backRight.getCurrentPosition()) / 4);
+//
+//            if (encoderAmount > 0) {
+//                trueDeltaEncoder = encoderAmount - averageEncoder;
+//                deltaEncoder = percentEncoder - averageEncoder;
+//                if (trueDeltaEncoder < 0) {
+//                    leftSpeed = -0.22;
+//                    rightSpeed = -0.22;
+//                } else if (deltaEncoder < 0) {
+//                    leftSpeed = 0.17; //0.1
+//                    rightSpeed = 0.17; //0.1
+//                    if (Math.abs(trueDeltaEncoder) <= 55) {
+//                        if (!timerStart) {
+//                            runtime.reset();
+//                            timerStart = true;
+//                        } else if (runtime.seconds() > .3) {
+//                            turnDone = true;
+//                        }
+//                        leftSpeed = 0;
+//                        rightSpeed = 0;
+//                    }
+//                } else {
+//                    leftSpeed = gain * deltaEncoder * speed;
+//                    rightSpeed = gain * deltaEncoder * speed;
+//                    if (leftSpeed > speed) {
+//                        leftSpeed = speed;
+//                    } else if (leftSpeed <= 0.15) {
+//                        leftSpeed = 0.17;
+//                    }
+//                    if (rightSpeed > speed) {
+//                        rightSpeed = speed;
+//                    } else if (rightSpeed <= 0.15) {
+//                        rightSpeed = 0.17;
+//                    }
+//
+//                    if (deltaHeading > 0) {
+//                        rightSpeed -= (deltaHeading/100 * severity);
+//                    } else if (deltaHeading < 0) {
+//                        leftSpeed += (deltaHeading/100 * severity);
+//                    }
+//                }
+//                robot.frontLeft.setPower(leftSpeed);
+//                robot.frontRight.setPower(rightSpeed);
+//                robot.backLeft.setPower(leftSpeed);
+//                robot.backRight.setPower(rightSpeed);
+//            } else if (encoderAmount < 0) {
+//                trueDeltaEncoder = averageEncoder - encoderAmount;
+//                deltaEncoder = averageEncoder - percentEncoder;
+//                if (trueDeltaEncoder < 0) {
+//                    leftSpeed = -0.22;
+//                    rightSpeed = -0.22;
+//                } else if (deltaEncoder < 0) {
+//                    leftSpeed = 0.17; //0.1
+//                    rightSpeed = 0.17; //0.1
+//                    if (Math.abs(trueDeltaEncoder) <= 55) {
+//                        if (!timerStart) {
+//                            runtime.reset();
+//                            timerStart = true;
+//                        } else if (runtime.seconds() > .3) {
+//                            turnDone = true;
+//                        }
+//                        leftSpeed = 0;
+//                        rightSpeed = 0;
+//                    }
+//                } else {
+//                    leftSpeed = gain * deltaEncoder * speed;
+//                    rightSpeed = gain * deltaEncoder * speed;
+//                    if (leftSpeed > speed) {
+//                        leftSpeed = speed;
+//                    } else if (leftSpeed <= 0.15) {
+//                        leftSpeed = 0.17;
+//                    }
+//                    if (rightSpeed > speed) {
+//                        rightSpeed = speed;
+//                    } else if (rightSpeed <= 0.15) {
+//                        rightSpeed = 0.17;
+//                    }
+//
+//                    if (deltaHeading > 0) {
+//                        rightSpeed += (deltaHeading/100 * severity);
+//                    } else if (deltaHeading < 0) {
+//                        leftSpeed -= (deltaHeading/100 * severity);
+//                    }
+//                }
+//                robot.frontLeft.setPower(-leftSpeed);
+//                robot.frontRight.setPower(-rightSpeed);
+//                robot.backLeft.setPower(-leftSpeed);
+//                robot.backRight.setPower(-rightSpeed);
+//            } else {
+//                leftSpeed = 0;
+//                rightSpeed = 0;
+//            }
+//
+//            telemetry.addData("delta", deltaHeading);
+//            telemetry.addData("live", averageEncoder);
+//            telemetry.addData("left", leftSpeed);
+//            telemetry.addData("right", rightSpeed);
+//            telemetry.addData("delta encoder", deltaEncoder);
+//            telemetry.addData("true delta encoder", trueDeltaEncoder);
+//            telemetry.update();
+//        }
+//    }
+//

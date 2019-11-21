@@ -19,8 +19,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 import java.util.Locale;
 
 @TeleOp
-//@Disabled //DO NOT ENABLE UNLESS YOU HAVE ADI'S PERMISSION
-public class EncoderOp extends LinearOpMode {
+//@Disabled
+public class OctTest extends LinearOpMode {
 
     OctHardware robot = new OctHardware();
     private ElapsedTime runtime = new ElapsedTime();
@@ -68,35 +68,49 @@ public class EncoderOp extends LinearOpMode {
         // Start the logging of measured acceleration
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
 
-        double fLStart = robot.frontLeft.getCurrentPosition();
-        double fRStart = robot.frontRight.getCurrentPosition();
-        double rLStart = robot.backLeft.getCurrentPosition();
-        double rRStart = robot.backRight.getCurrentPosition();
-
-        double imuStart = angles.firstAngle;
+        boolean slowMode = false;
+        boolean reverse = false;
 
         while (opModeIsActive()) {
 
-            //gamepad 1 (xbox)
+            //gamepad 1
             double throttle = ((gamepad1.right_trigger) - (gamepad1.left_trigger));
             double steering = gamepad1.left_stick_x;
+
+            if (gamepad1.a) {
+                slowMode = !slowMode;
+                while (gamepad1.a);
+            }
 
             double rPower = throttle - steering;
             double lPower = throttle + steering;
 
-            //gamepad 1 (xbox) setPower
-            robot.frontLeft.setPower(-lPower/20);
-            robot.frontRight.setPower(rPower/20);
-            robot.backLeft.setPower(lPower/20);
-            robot.backRight.setPower(-rPower/20);
+            if (slowMode == true) {
+                if (steering != 0) {
+                    lPower /= 2.5;
+                    rPower /= 2.5;
+                } else {
+                    lPower /= 2;
+                    rPower /= 2;
+                }
+            }
 
-            telemetry.addData("Delta IMU", (angles.firstAngle - imuStart));
-            telemetry.addData("Delta Front Left", robot.frontLeft.getCurrentPosition() - fLStart);
-            telemetry.addData("Delta Front Right", robot.frontRight.getCurrentPosition() - fRStart);
-            telemetry.addData("Delta Rear Left", robot.backLeft.getCurrentPosition() - rLStart);
-            telemetry.addData("Delta Rear Right", robot.backRight.getCurrentPosition() - rRStart);
+            if (gamepad1.right_bumper) {
+                lPower *= 5;
+                rPower *= 5;
+            }
+
+            //gamepad 1 setPower
+            robot.frontLeft.setPower(lPower/4);
+            robot.frontRight.setPower(rPower/4);
+            robot.backLeft.setPower(lPower/4);
+            robot.backRight.setPower(rPower/4);
+
+            telemetry.addData("lpower", lPower);
             telemetry.addData("Status", "Running");
+            telemetry.addData("slowmode", slowMode);
             telemetry.update();
+
         }
     }
 
@@ -114,7 +128,7 @@ public class EncoderOp extends LinearOpMode {
         }
         });
 
-        /*telemetry.addLine()
+        telemetry.addLine()
                 .addData("status", new Func<String>() {
                     @Override public String value() {
                         return imu.getSystemStatus().toShortString();
@@ -125,8 +139,6 @@ public class EncoderOp extends LinearOpMode {
                         return imu.getCalibrationStatus().toString();
                     }
                 });
-
-        */
 
         telemetry.addLine()
                 .addData("heading", new Func<String>() {
@@ -146,6 +158,27 @@ public class EncoderOp extends LinearOpMode {
                     }
                 });
 
+        telemetry.addLine()
+                .addData("grvty", new Func<String>() {
+                    @Override public String value() {
+                        return gravity.toString();
+                    }
+                })
+                .addData("mag", new Func<String>() {
+                    @Override public String value() {
+                        return String.format(Locale.getDefault(), "%.3f",
+                                Math.sqrt(gravity.xAccel*gravity.xAccel
+                                        + gravity.yAccel*gravity.yAccel
+                                        + gravity.zAccel*gravity.zAccel));
+                    }
+                });
+
+        telemetry.addLine()
+                .addData("Debugging: ", new Func<String>() {
+                    @Override public String value() {
+                        return formatAngle(angles.angleUnit, angles.thirdAngle);
+                    }
+                });
     }
 
     String formatAngle(AngleUnit angleUnit, double angle) {
@@ -156,4 +189,3 @@ public class EncoderOp extends LinearOpMode {
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
 }
-

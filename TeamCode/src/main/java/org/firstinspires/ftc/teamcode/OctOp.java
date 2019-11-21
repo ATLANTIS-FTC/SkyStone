@@ -5,6 +5,7 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Func;
@@ -69,19 +70,19 @@ public class OctOp extends LinearOpMode {
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
 
         boolean slowMode = false;
-        boolean slowSlide = false;
-
-        //robot.mineralBlock.setPosition(0); //close
+        boolean reverse = false;
+        boolean open = false;
+        int pivotPos = 0;
 
         while (opModeIsActive()) {
 
-            //gamepad 1 (xbox)
+            //gamepad 1
             double throttle = ((gamepad1.right_trigger) - (gamepad1.left_trigger));
             double steering = gamepad1.left_stick_x;
 
-            if (gamepad1.a) {
+            if (gamepad1.b) {
                 slowMode = !slowMode;
-                while (gamepad1.a);
+                while (opModeIsActive() && gamepad1.b);
             }
 
             double rPower = throttle - steering;
@@ -98,21 +99,69 @@ public class OctOp extends LinearOpMode {
             }
 
             if (gamepad1.right_bumper) {
-                lPower *= 5;
-                rPower *= 5;
+                lPower *= 3;
+                rPower *= 3;
+            }
+
+            //gamepad 2
+            double pivot = -gamepad2.left_stick_y;
+            double intake = ((-gamepad2.right_trigger) + (gamepad2.left_trigger));
+
+            if (gamepad2.right_bumper) {
+                pivot *= 2.5;
+            }
+
+            if (gamepad2.b) {
+                robot.intakeFlipperLeft.setPosition(.5);
+                robot.intakeFlipperRight.setPosition(.8);
+            }
+
+            if (gamepad2.y) {
+                robot.intakeFlipperLeft.setPosition(.6);
+                robot.intakeFlipperRight.setPosition(.9);
+            }
+
+            if (gamepad2.x) {
+                robot.intakeFlipperLeft.setPosition(.675);
+                robot.intakeFlipperRight.setPosition(.975);
+            }
+
+            if (gamepad2.dpad_up) {
+                robot.openerRight.setPosition(.2);
+                robot.openerLeft.setPosition(.15);
+            }
+
+            if (gamepad2.dpad_down) {
+                robot.openerRight.setPosition(0);
+                robot.openerLeft.setPosition(0);
+            }
+
+            if (gamepad2.dpad_left) {
+                robot.foundationMover.setPosition(1);
+            }
+
+            if (gamepad2.dpad_right) {
+                robot.foundationMover.setPosition(.5);
             }
 
 
-            //gamepad 1 (xbox) setPower
-            robot.frontLeft.setPower(lPower/4);
-            robot.frontRight.setPower(rPower/4);
-            robot.backLeft.setPower(lPower/4);
-            robot.backRight.setPower(rPower/4);
+            //gamepad 1 setPower
+            robot.frontLeft.setPower(-lPower/3);
+            robot.frontRight.setPower(rPower/3);
+            robot.backLeft.setPower(lPower/3);
+            robot.backRight.setPower(-rPower/3);
 
             telemetry.addData("lpower", lPower);
+            telemetry.addData("rpower", rPower);
             telemetry.addData("Status", "Running");
             telemetry.addData("slowmode", slowMode);
             telemetry.update();
+
+            //gamepad 2 setPower
+            robot.intakeRight.setPower(intake);
+            robot.intakeLeft.setPower(-intake);
+            robot.pivot.setPower(pivot/4);
+
         }
     }
 
