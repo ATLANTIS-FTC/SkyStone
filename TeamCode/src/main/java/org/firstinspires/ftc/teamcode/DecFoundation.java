@@ -62,9 +62,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@Autonomous(name="OctPark", group="October")
+@Autonomous(name="DecFoundation", group="December")
 //@Disabled
-public class OctPark extends LinearOpMode {
+public class DecFoundation extends LinearOpMode {
 
     /* Declare OpMode members. */
     OctHardware         robot   = new OctHardware();   // Use a Pushbot's hardware
@@ -109,13 +109,12 @@ public class OctPark extends LinearOpMode {
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
-//
-//        robot.intakeFlipperLeft.setPosition(.675);
-//        robot.intakeFlipperRight.setPosition(.975);
+
+        robot.intakeFlipperLeft.setPosition(.675);
+        robot.intakeFlipperRight.setPosition(.975);
         robot.openerRight.setPosition(.2);
         robot.openerLeft.setPosition(.15);
         encoderDrive(1,500,500,1);
-        encoderAccessory(1,-800,1);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
@@ -129,58 +128,6 @@ public class OctPark extends LinearOpMode {
      *  2) Move runs out of time
      *  3) Driver stops the opmode running.
      */
-    public void encoderAccessory(double speed, double encoderAmount, double key) {
-        int newSlideTarget;
-        int newPivotTarget;
-        robot.pivot.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        robot.elevator.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        robot.elevator.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        // Ensure that the opmode is still active
-        if (opModeIsActive()) {
-
-            // Determine new target position, and pass to motor controller
-            if (key == 0) {
-                newPivotTarget = robot.pivot.getCurrentPosition() + (int) (-encoderAmount);// * COUNTS_PER_INCH);
-                robot.pivot.setTargetPosition(newPivotTarget);
-                robot.pivot.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                runtime.reset();
-                robot.pivot.setPower(Math.abs(Math.abs(speed)));
-                while (opModeIsActive() && (robot.pivot.isBusy())) {}
-                robot.pivot.setPower(0);
-            } else if (key == 1) {
-                newSlideTarget = robot.elevator.getCurrentPosition() + (int) (-encoderAmount);// * COUNTS_PER_INCH);
-                robot.elevator.setTargetPosition(newSlideTarget);
-                robot.elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                runtime.reset();
-                robot.elevator.setPower(Math.abs(Math.abs(speed)));
-                while (opModeIsActive() && (robot.elevator.isBusy())) {}
-                robot.elevator.setPower(0);
-
-            }
-
-
-            // reset the timeout time and start motion.
-
-
-            // keep looping while we are still active, and there is time left, and both motors are running.
-            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
-            // its target position, the motion will stop.  This is "safer" in the event that the robot will
-            // always end the motion as soon as possible.
-            // However, if you require that BOTH motors have finished their moves before the robot continues
-            // onto the next step, use (isBusy() || isBusy()) in the loop test.
-
-            // Stop all motion;
-//            robot.pivot.setPower(0);
-
-            // Turn off RUN_TO_POSITION
-//            robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-            //  sleep(250);   // optional pause after each move
-        }
-    }
-
     public void encoderDrive(double speed, double leftEncoder, double rightEncoder, double timeoutS) {
         int newFrontLeftTarget;
         int newFrontRightTarget;

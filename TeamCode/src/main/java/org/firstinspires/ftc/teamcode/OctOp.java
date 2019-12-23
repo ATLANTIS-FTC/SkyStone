@@ -38,6 +38,7 @@ public class OctOp extends LinearOpMode {
     @Override
     public void runOpMode() {
         robot.init(hardwareMap);
+        robot.blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.CP1_2_COLOR_WAVES);
 
         // Set up the parameters with which we will use our IMU. Note that integration
         // algorithm here just reports accelerations to the logcat log; it doesn't actually
@@ -70,9 +71,9 @@ public class OctOp extends LinearOpMode {
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
 
         boolean slowMode = false;
-        boolean reverse = false;
-        boolean open = false;
-        int pivotPos = 0;
+        int i = 0;
+        boolean slowPivot = false;
+        boolean cap = false;
 
         while (opModeIsActive()) {
 
@@ -104,11 +105,38 @@ public class OctOp extends LinearOpMode {
             }
 
             //gamepad 2
-            double pivot = -gamepad2.left_stick_y;
+            double pivot = -gamepad2.left_stick_y +.00175;
+            double elevator = -gamepad2.right_stick_y;
             double intake = ((-gamepad2.right_trigger) + (gamepad2.left_trigger));
 
-            if (gamepad2.right_bumper) {
-                pivot *= 2.5;
+//            if (gamepad2.left_bumper) {
+//                bumper = !bumper;
+//                while (opModeIsActive() && gamepad2.left_bumper);
+//            }
+//
+//            if (bumper) {
+//                int newPivotTarget;
+//                robot.pivot.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//                robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//
+//                // Ensure that the opmode is still active
+//                if (opModeIsActive()) {
+//
+//                    // Determine new target position, and pass to motor controller
+//                    newPivotTarget = robot.pivot.getCurrentPosition() + (int)(-1000);// * COUNTS_PER_INCH);
+//                    robot.pivot.setTargetPosition(newPivotTarget);
+//
+//                    robot.pivot.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//
+//
+//                    // reset the timeout time and start motion.
+//                    runtime.reset();
+//                    robot.pivot.setPower(Math.abs(Math.abs(1)));
+//                }
+//            }
+
+            if (gamepad2.left_bumper) {
+                pivot *= 3;
             }
 
             if (gamepad2.b) {
@@ -117,13 +145,13 @@ public class OctOp extends LinearOpMode {
             }
 
             if (gamepad2.y) {
-                robot.intakeFlipperLeft.setPosition(.6);
-                robot.intakeFlipperRight.setPosition(.9);
+                robot.intakeFlipperLeft.setPosition(.625);
+                robot.intakeFlipperRight.setPosition(.925);
             }
 
             if (gamepad2.x) {
-                robot.intakeFlipperLeft.setPosition(.675);
-                robot.intakeFlipperRight.setPosition(.975);
+                robot.intakeFlipperLeft.setPosition(.65);
+                robot.intakeFlipperRight.setPosition(.985);
             }
 
             if (gamepad2.dpad_up) {
@@ -134,14 +162,30 @@ public class OctOp extends LinearOpMode {
             if (gamepad2.dpad_down) {
                 robot.openerRight.setPosition(0);
                 robot.openerLeft.setPosition(0);
+                i++;
+            }
+
+            if (i > 3) {
+                slowPivot = true;
             }
 
             if (gamepad2.dpad_left) {
-                robot.foundationMover.setPosition(1);
+                robot.foundationMover.setPosition(.8);
             }
 
             if (gamepad2.dpad_right) {
-                robot.foundationMover.setPosition(.5);
+                robot.foundationMover.setPosition(.3);
+            }
+
+            if (!cap) {
+            robot.capperArav.setPosition(.3);
+            } else {
+                robot.capperArav.setPosition(0);
+            }
+
+            if (gamepad2.a) {
+                cap = !cap;
+                while (opModeIsActive() && gamepad2.a);
             }
 
 
@@ -155,12 +199,18 @@ public class OctOp extends LinearOpMode {
             telemetry.addData("rpower", rPower);
             telemetry.addData("Status", "Running");
             telemetry.addData("slowmode", slowMode);
+            telemetry.addData("slowpivot", slowPivot);
             telemetry.update();
 
             //gamepad 2 setPower
+//            double pivotPower = pivot/3;
+//            if (slowPivot) {
+//                pivotPower /= 2;
+//            }
             robot.intakeRight.setPower(intake);
             robot.intakeLeft.setPower(-intake);
-            robot.pivot.setPower(pivot/4);
+            robot.pivot.setPower(pivot/3);
+            robot.elevator.setPower(elevator);
 
         }
     }
@@ -238,5 +288,42 @@ public class OctOp extends LinearOpMode {
 
     String formatDegrees(double degrees){
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
+    }
+
+    public void encoderAccessory(double speed, double encoderAmount) {
+        int newSlideTarget;
+        int newPivotTarget;
+        robot.pivot.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // Ensure that the opmode is still active
+        if (opModeIsActive()) {
+
+            // Determine new target position, and pass to motor controller
+            newPivotTarget = robot.pivot.getCurrentPosition() + (int)(-encoderAmount);// * COUNTS_PER_INCH);
+            robot.pivot.setTargetPosition(newPivotTarget);
+
+            robot.pivot.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+
+            // reset the timeout time and start motion.
+            runtime.reset();
+            robot.pivot.setPower(Math.abs(Math.abs(speed)));
+
+            // keep looping while we are still active, and there is time left, and both motors are running.
+            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
+            // its target position, the motion will stop.  This is "safer" in the event that the robot will
+            // always end the motion as soon as possible.
+            // However, if you require that BOTH motors have finished their moves before the robot continues
+            // onto the next step, use (isBusy() || isBusy()) in the loop test.
+
+            // Stop all motion;
+//            robot.pivot.setPower(0);
+
+            // Turn off RUN_TO_POSITION
+//            robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            //  sleep(250);   // optional pause after each move
+        }
     }
 }

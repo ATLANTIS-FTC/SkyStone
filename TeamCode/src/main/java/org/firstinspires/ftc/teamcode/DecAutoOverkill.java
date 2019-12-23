@@ -29,6 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -88,9 +89,9 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
  * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
  * is explained below.
  */
-@Autonomous(name = "OctTest", group = "October")
+@Autonomous(name = "DecAutoOverkill", group = "December")
 //@Disabled
-public class OctTest extends LinearOpMode {
+public class DecAutoOverkill extends LinearOpMode {
 
     OctHardware robot   = new OctHardware();   // Use a Pushbot's hardware
     private ElapsedTime     runtime = new ElapsedTime();
@@ -103,6 +104,46 @@ public class OctTest extends LinearOpMode {
 
     public String pitch;
 
+    private static final String TFOD_MODEL_ASSET = "Skystone.tflite";
+    private static final String LABEL_FIRST_ELEMENT = "Stone";
+    private static final String LABEL_SECOND_ELEMENT = "Skystone";
+
+    int ssX = -1;
+    int sOneX = -1;
+    int sTwoX = -1;
+//
+//    Stone stoneOne = new Stone();
+//    Stone stoneTwo = new Stone();
+//    Stone stoneThree = new Stone();
+//    Stone stoneFour = new Stone();
+//    Stone stoneFive = new Stone();
+//    Stone stoneSix = new Stone();
+
+    /*
+     * IMPORTANT: You need to obtain your own license key to use Vuforia. The string below with which
+     * 'parameters.vuforiaLicenseKey' is initialized is for illustration only, and will not function.
+     * A Vuforia 'Development' license key, can be obtained free of charge from the Vuforia developer
+     * web site at https://developer.vuforia.com/license-manager.
+     *
+     * Vuforia license keys are always 380 characters long, and look as if they contain mostly
+     * random data. As an example, here is a example of a fragment of a valid key:
+     *      ... yIgIzTqZ4mWjk9wd3cZO9T1axEqzuhxoGlfOOI2dRzKS4T0hQ8kT ...
+     * Once you've obtained a license key, copy the string from the Vuforia web site
+     * and paste it in to your code on the next line, between the double quotes.
+     */
+    private static final String VUFORIA_KEY = "AVF7OF7/////AAABmaKBSYRMHkclubr6nFb2TLcr3QzadzX163OzDe2NS0p2hQlEvibYh8W2xO78LrAUPInfApVZ1qzOxq7fnHZ9KQ0QiJM0E5WbwxdY7U+Gbrk8NuDgceoPw7eD8j2Sk7NuvuTcXYAAoA4wKwgDlw+iA19frB/9/WuUonCWiMAi+sxSoAGkudWAx8f1AO0AXBNyf6d0QHRGVeGRyMYtvkvsez3kU6U7LnMUwpDkX5RfQi+AMKq+BTLYtOo90waG5G84TV9LU1OSlDHtPh7sSG6YuVdn0Pmm/+k9nEtedozzDeDmwKfT1A5uL1m+RGmgCe4gA45H7qH6p9ymyKDbhvfDbTo/fVI0Y9g+Z8FEMByMnI6X";
+
+    /**
+     * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
+     * localization engine.
+     */
+    private VuforiaLocalizer vuforia;
+
+    /**
+     * {@link #tfod} is the variable we will use to store our instance of the TensorFlow Object
+     * Detection engine.
+     */
+    private TFObjectDetector tfod;
 
     @Override
     public void runOpMode() {
@@ -139,20 +180,259 @@ public class OctTest extends LinearOpMode {
         robot.intakeRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.intakeLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+        initVuforia();
+
+        if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
+            initTfod();
+        } else {
+            telemetry.addData("Sorry!", "This device is not compatible with TFOD");
+        }
+
+        /**
+         * Activate TensorFlow Object Detection before we wait for the start command.
+         * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
+         **/
+        if (tfod != null) {
+            tfod.activate();
+        }
+
         /** Wait for the game to begin */
         telemetry.addData(">", "Press Play to start tracking - U R GO, GOOD LUCK!");
         telemetry.update();
         waitForStart();
-        encoderAccessory(.25,560);
-        robot.pivot.setPower(.009);
-        runtime.reset();
-        while (opModeIsActive() && runtime.seconds() < 30) {
 
+        boolean found = false;
+        int key = -1;
+
+//        robot.intakeFlipperLeft.setPosition(.65);
+//        robot.intakeFlipperRight.setPosition(.980);
+//        encoderAccessory(1,300);
+//        robot.intakeFlipperLeft.setPosition(.5);
+//        robot.intakeFlipperRight.setPosition(.8);
+        robot.openerRight.setPosition(.2);
+        robot.openerLeft.setPosition(.15);
+        encoderAccessory(1,40);
+        encoderDrive(1,0,1000,1);
+
+        runtime.reset(); //TensorFlow Timer Wait
+        while (opModeIsActive() && runtime.seconds() < 1.75) {
+            if (tfod != null) {
+                // getUpdatedRecognitions() will return null if no new information is available since
+                // the last time that call was made.
+                List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+                if (updatedRecognitions != null) {
+                    telemetry.addData("# Object Detected", updatedRecognitions.size());
+
+                    if (updatedRecognitions.size() == 3) { //if 3 minerals detected, use TF mandated algorithm
+                        int skystoneX = -1;
+                        int stoneOneX = -1;
+                        int stoneTwoX = -1;
+                        for (Recognition recognition : updatedRecognitions) {
+                            if (recognition.getLabel().equals("Skystone")) {
+                                skystoneX = (int) recognition.getLeft();
+                            } else if (stoneOneX == -1) {
+                                stoneOneX = (int) recognition.getLeft();
+                            } else {
+                                stoneTwoX = (int) recognition.getLeft();
+                            }
+                        }
+                        if (skystoneX != -1 && stoneOneX != -1 && stoneTwoX != -1) {
+                            if (skystoneX < stoneOneX && skystoneX < stoneTwoX) {
+                                telemetry.addData("Gold Mineral Position", "Left");
+                                key = 0;
+                            } else if (skystoneX > stoneOneX && skystoneX > stoneTwoX) {
+                                telemetry.addData("Gold Mineral Position", "Right");
+                                key = 2;
+                            } else {
+                                telemetry.addData("Gold Mineral Position", "Center");
+                                key = 1;
+                            }
+                        }
+                        ssX = skystoneX;
+                        sOneX = stoneOneX;
+                        sTwoX = stoneTwoX;
+                    }
+
+                    //if 2 minerals detected, split into (not) see gold ifs
+                    if (updatedRecognitions.size() == 2) {
+                        int skystoneX = -1;
+                        int stoneOneX = -1;
+                        int stoneTwoX = -1;
+                        //populates coordinate values
+                        for (Recognition recognition : updatedRecognitions) {
+                            if (recognition.getLabel().equals("Skystone")) {
+                                skystoneX = (int) recognition.getLeft();
+                            } else if (stoneOneX == -1) {
+                                stoneOneX = (int) recognition.getLeft();
+                            } else {
+                                stoneTwoX = (int) recognition.getLeft();
+                            }
+                        }
+
+                        //combination of 1 gold and 1 silver
+
+                        if (skystoneX != -1 && (stoneOneX != -1 || stoneTwoX != -1)) {
+                            if (skystoneX < stoneOneX && skystoneX < 700) {
+                                telemetry.addData("Gold Mineral Position", "Left (GS)");
+                                key = 0;
+                            } else if (skystoneX > stoneOneX && skystoneX > 900) {
+                                telemetry.addData("Gold Mineral Position", "Right (GS)");
+                                key = 2;
+                            } else {
+                                telemetry.addData("Gold Mineral Position", "Center (GS)");
+                                key = 1;
+                            }
+                            // combination of 2 silvers
+                        } else if (stoneOneX != -1 && stoneTwoX != -1) {
+                            if ((200 < stoneOneX) && (stoneOneX < 300) && (350 < stoneTwoX)) {
+                                telemetry.addData("Gold Mineral Position", "Left (SS1)");
+                                key = 0;
+                            } else if ((200 < stoneTwoX) && (stoneTwoX < 300) && (350 < stoneOneX)) {
+                                telemetry.addData("Gold Mineral Position", "Left (SS2)");
+                                key = 0;
+                            } else if ((150 > stoneOneX) && ((200 < stoneTwoX) && (stoneTwoX < 300))) {
+                                telemetry.addData("Gold Mineral Position", "Right (SS3)");
+                                key = 2;
+                            } else if ((150 > stoneTwoX) && ((200 < stoneOneX) && (stoneOneX < 300))) {
+                                telemetry.addData("Gold Mineral Position", "Right (SS4)");
+                                key = 2;
+                            } else {
+                                telemetry.addData("Gold Mineral Position", "Center (SS5)");
+                                key = 1;
+                            }
+                        }
+
+                        ssX = skystoneX;
+                        sOneX= stoneOneX;
+                        sTwoX = stoneTwoX;
+                    }
+                    telemetry.addData("Key", key);
+                    telemetry.addData("skystoneX", ssX);
+                    telemetry.addData("stoneOneX", sOneX);
+                    telemetry.addData("stoneTwoX", sTwoX);
+                    telemetry.update();
+                    telemetry.update();
+                }
+            }
+        }
+
+        if (tfod != null) {
+            tfod.shutdown();
+            tfod.deactivate();
+
+        }
+        //L440
+        //C660
+        //R
+
+        if (key == 0) {
+            telemetry.addData("gold mineral", "left");
+        } else if (key == 1) {
+            telemetry.addData("gold mineral", "center");
+        } else if (key == 2) {
+            telemetry.addData("gold mineral", "right");
+        } else if (key == 4) {
+            key = 1;
+            telemetry.addData("GOLD DETECTION FAILURE", "OVERRIDE KEY 1");
+        }
+        telemetry.update();
+
+//        encoderAccessory(1,75);
+
+        if (key == 0) {
+//            encoderAccessory(1,-75);
+//            robot.pivot.setPower(.2);
+            encoderDrive(1,400,300,.5);
+            encoderDrive(1,1200,0,1);
+            robot.intakeFlipperRight.setPosition(.980);
+            runtime.reset();
+            while (opModeIsActive() && runtime.seconds() < .5) {}
+            robot.intakeFlipperLeft.setPosition(.65);
+            robot.pivot.setPower(0);
+            encoderDrive(1,600,600,1);
+            robot.intakeFlipperLeft.setPosition(.65);
+            robot.intakeFlipperRight.setPosition(.985);
+            encoderIntake(.6,-300,600,2);
+            robot.intakeFlipperLeft.setPosition(.6);
+            robot.intakeFlipperRight.setPosition(.9);
+            robot.intakeLeft.setPower(0);
+            robot.intakeRight.setPower(0);
+            robot.intakeFlipperLeft.setPosition(.65);
+            robot.intakeFlipperRight.setPosition(.985);
+            encoderAccessory(1,300);
+            robot.intakeFlipperLeft.setPosition(.5);
+            robot.intakeFlipperRight.setPosition(.8);
+            encoderDrive(1,-500,-500,.5);
+            encoderDrive(.8,0,-860,1.5);
+            robot.intakeFlipperRight.setPosition(.980);
+            runtime.reset();
+            while (opModeIsActive() && runtime.seconds() < .5) {}
+            robot.intakeFlipperLeft.setPosition(.65);
+            encoderAccessorySpecial(1,75);
+            encoderDrive(1,-2300,-2300,1.5);
+            encoderDrive(.8,0,-1100,1);
+            runtime.reset();
+            robot.foundationMover.setDirection(Servo.Direction.FORWARD);
+            robot.foundationMover.setPosition(8);
+            encoderDrive(1,-400,-400,1);
+            while (opModeIsActive() && runtime.seconds() < 2) {
+            }
+            encoderDrive(1,300,300,1);
+            encoderAccessory(1,500);
+            encoderDrive(.8,0,-400,1);
+            encoderDrive(1,750,750,1);
+            encoderDrive(.8,0,1000,1);
+            robot.openerRight.setPosition(0);
+            robot.openerLeft.setPosition(0);
+            encoderDrive(1,-600,-600,1);
+            while (opModeIsActive() && runtime.seconds() < 1) {
+                robot.foundationMover.setPosition(1);
+            }
+
+
+
+        } else if (key == 1) {
+            encoderDrive(.5,-50,-50,1);
+            encoderDrive(.5,-50,-50,1);
+        } else if (key == 2) {
+            encoderDrive(.5,-50,-50,1);
+            encoderDrive(.5,-50,-50,1);
+            encoderDrive(.5,-50,-50,1);
         }
 
 
     }
 
+
+    /**
+     * Initialize the Vuforia localization engine.
+     */
+    private void initVuforia() {
+        /*
+         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+         */
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+        parameters.cameraDirection = CameraDirection.BACK;
+
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
+    }
+
+    /**
+     * Initialize the TensorFlow Object Detection engine.
+     */
+    private void initTfod() {
+        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfodParameters.minimumConfidence = 0.65;
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
+    }
 
 //    public void encoderPivot(double speed, double encoder, double timeoutS) {
 //        int newTarget;
@@ -256,6 +536,46 @@ public class OctTest extends LinearOpMode {
         }
     }
 
+    public void encoderAccessorySpecial(double speed, double encoderAmount) {
+        int newSlideTarget;
+        int newPivotTarget;
+        robot.pivot.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // Ensure that the opmode is still active
+        if (opModeIsActive()) {
+
+            // Determine new target position, and pass to motor controller
+            newPivotTarget = robot.pivot.getCurrentPosition() + (int)(-encoderAmount);// * COUNTS_PER_INCH);
+            robot.pivot.setTargetPosition(newPivotTarget);
+
+            robot.pivot.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+
+            // reset the timeout time and start motion.
+            runtime.reset();
+            robot.pivot.setPower(Math.abs(Math.abs(speed)));
+
+//            while (opModeIsActive() && (robot.pivot.isBusy())) {}
+            robot.pivot.setPower(0);
+
+            // keep looping while we are still active, and there is time left, and both motors are running.
+            // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
+            // its target position, the motion will stop.  This is "safer" in the event that the robot will
+            // always end the motion as soon as possible.
+            // However, if you require that BOTH motors have finished their moves before the robot continues
+            // onto the next step, use (isBusy() || isBusy()) in the loop test.
+
+            // Stop all motion;
+//            robot.pivot.setPower(0);
+
+            // Turn off RUN_TO_POSITION
+//            robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            //  sleep(250);   // optional pause after each move
+        }
+    }
+
     public void encoderAccessory(double speed, double encoderAmount) {
         int newSlideTarget;
         int newPivotTarget;
@@ -277,7 +597,6 @@ public class OctTest extends LinearOpMode {
             robot.pivot.setPower(Math.abs(Math.abs(speed)));
 
             while (opModeIsActive() && (robot.pivot.isBusy())) {}
-
             robot.pivot.setPower(0);
 
             // keep looping while we are still active, and there is time left, and both motors are running.

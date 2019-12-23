@@ -5,6 +5,7 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Func;
@@ -72,6 +73,7 @@ public class EncoderOp extends LinearOpMode {
         double fRStart = robot.frontRight.getCurrentPosition();
         double rLStart = robot.backLeft.getCurrentPosition();
         double rRStart = robot.backRight.getCurrentPosition();
+        double pStart = robot.pivot.getCurrentPosition();
 
         double imuStart = angles.firstAngle;
 
@@ -84,17 +86,101 @@ public class EncoderOp extends LinearOpMode {
             double rPower = throttle - steering;
             double lPower = throttle + steering;
 
+            //gamepad 2
+            boolean bumper = false;
+            robot.pivot.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            double pivot = -gamepad2.left_stick_y;
+            double intake = ((-gamepad2.right_trigger) + (gamepad2.left_trigger));
+
+//            if (gamepad2.left_bumper) {
+//                bumper = !bumper;
+//                while (opModeIsActive() && gamepad2.left_bumper);
+//            }
+//
+//            if (bumper) {
+//                int newPivotTarget;
+//                robot.pivot.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//                robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//
+//                // Ensure that the opmode is still active
+//                if (opModeIsActive()) {
+//
+//                    // Determine new target position, and pass to motor controller
+//                    newPivotTarget = robot.pivot.getCurrentPosition() + (int)(-1000);// * COUNTS_PER_INCH);
+//                    robot.pivot.setTargetPosition(newPivotTarget);
+//
+//                    robot.pivot.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+//
+//
+//                    // reset the timeout time and start motion.
+//                    runtime.reset();
+//                    robot.pivot.setPower(Math.abs(Math.abs(1)));
+//                }
+//            }
+
+            if (gamepad2.right_bumper) {
+                pivot *= 100;
+            }
+
+            if (robot.pivot.getCurrentPosition() == 700) {
+                pivot = -pivot;
+            }
+
+            if (gamepad2.left_bumper) {
+                robot.pivot.setPower(0);
+            }
+
+            if (gamepad2.b) {
+                robot.intakeFlipperLeft.setPosition(.5);
+                robot.intakeFlipperRight.setPosition(.8);
+            }
+
+            if (gamepad2.y) {
+                robot.intakeFlipperLeft.setPosition(.6);
+                robot.intakeFlipperRight.setPosition(.9);
+            }
+
+            if (gamepad2.x) {
+                robot.intakeFlipperLeft.setPosition(.675);
+                robot.intakeFlipperRight.setPosition(.975);
+            }
+
+            if (gamepad2.dpad_up) {
+                robot.openerRight.setPosition(.2);
+                robot.openerLeft.setPosition(.15);
+            }
+
+            if (gamepad2.dpad_down) {
+                robot.openerRight.setPosition(0);
+                robot.openerLeft.setPosition(0);
+            }
+
+            if (gamepad2.dpad_left) {
+                robot.foundationMover.setPosition(1);
+            }
+
+            if (gamepad2.dpad_right) {
+                robot.foundationMover.setPosition(.5);
+            }
+
             //gamepad 1 (xbox) setPower
             robot.frontLeft.setPower(-lPower/20);
             robot.frontRight.setPower(rPower/20);
             robot.backLeft.setPower(lPower/20);
             robot.backRight.setPower(-rPower/20);
 
+            //gamepad 2 setPower
+            robot.intakeRight.setPower(intake);
+            robot.intakeLeft.setPower(-intake);
+            robot.pivot.setPower(pivot/50);
+
+
             telemetry.addData("Delta IMU", (angles.firstAngle - imuStart));
             telemetry.addData("Delta Front Left", robot.frontLeft.getCurrentPosition() - fLStart);
             telemetry.addData("Delta Front Right", robot.frontRight.getCurrentPosition() - fRStart);
             telemetry.addData("Delta Rear Left", robot.backLeft.getCurrentPosition() - rLStart);
             telemetry.addData("Delta Rear Right", robot.backRight.getCurrentPosition() - rRStart);
+            telemetry.addData("Delta Pivot", robot.pivot.getCurrentPosition() - pStart);
             telemetry.addData("Status", "Running");
             telemetry.update();
         }

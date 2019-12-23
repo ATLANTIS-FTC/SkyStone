@@ -29,6 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -175,124 +176,186 @@ public class OctAutoRight extends LinearOpMode {
         robot.intakeRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.intakeLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        initVuforia();
-
-        if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
-            initTfod();
-        } else {
-            telemetry.addData("Sorry!", "This device is not compatible with TFOD");
-        }
-
-        /**
-         * Activate TensorFlow Object Detection before we wait for the start command.
-         * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
-         **/
-        if (tfod != null) {
-            tfod.activate();
-        }
-
         /** Wait for the game to begin */
         telemetry.addData(">", "Press Play to start tracking - U R GO, GOOD LUCK!");
         telemetry.update();
         waitForStart();
-
-        robot.intakeFlipperLeft.setPosition(.675);
-        robot.intakeFlipperRight.setPosition(.975);
-        robot.openerRight.setPosition(.2);
-        robot.openerLeft.setPosition(.15);
-        encoderDrive(.7,1000,1000,2);
-        encoderDrive(.2,-500,500,2);
+        encoderAccessory(1,-800,1);
+//        encoderAccessory(1,25);
+//        robot.intakeFlipperRight.setPosition(.975);
+//        robot.intakeFlipperLeft.setPosition(.675);
+//        robot.openerRight.setPosition(.2);
+//        robot.openerLeft.setPosition(.15);
+//        encoderDrive(.8,525,525,1.5);
+//        encoderDrive(1,0,1045,1);
+//        encoderDrive(1,150,150,.5);
+//        encoderAccessory(.3,50);
+        robot.pivot.setPower(.02);
+//        encoderDrive(1,40,40,.25);
+//        encoderDrive(1,75,75,.5);
         runtime.reset();
-        while (runtime.seconds() < 1) {}
+        while (opModeIsActive() && runtime.seconds() < 1.5) {}
 
         boolean found = false;
         int key = -1;
 //        int keyB = -1;
 
         if (opModeIsActive()) {
-            int counter = 0;
-            while (opModeIsActive()) {
-                while (!found && opModeIsActive()) {
-                if (tfod != null) {
-                    // getUpdatedRecognitions() will return null if no new information is available since
-                    // the last time that call was made.
-                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
-                    if (updatedRecognitions != null) {
-                        telemetry.addData("# Object Detected", updatedRecognitions.size());
-                        // step through the list of recognitions and display boundary info.
-                            int i = 0;
-                            for (Recognition recognition : updatedRecognitions) {
-                                telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-                                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
-                                        recognition.getLeft(), recognition.getTop());
-                                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                                        recognition.getRight(), recognition.getBottom());
-                                if (recognition.getLabel().equals("Stone")) {
-                                    found = false;
-//                                    encoderDrive(.5, -850, -850, 2);
-                                } else if (recognition.getLabel().equals("Skystone")) {
-                                    found = true;
-                                    telemetry.addLine("found");
-                                    telemetry.addData("key: ", key);
-                                    break;
-                                }
-                                i++;
-                            }
-                        }
-                        telemetry.update();
-                    }
-                    if (found) {
-                        if (tfod != null) {
-                            tfod.shutdown();
-                        }
-                        encoderDrive(.5,530,-530,2);
-                        encoderIntake(.5,-10,700,2);
-                        robot.intakeFlipperLeft.setPosition(.6);
-                        robot.intakeFlipperRight.setPosition(.9);
-                        robot.intakeLeft.setPower(0);
-                        robot.intakeRight.setPower(0);
-                        encoderDrive(1,-1200,-1200,2);
-                        robot.intakeFlipperLeft.setPosition(1);
-                        robot.intakeFlipperRight.setPosition(1);
-                        encoderAccessory(.5,100);
-                        encoderDrive(.5,-580,580,2);
-//                        encoderPivot(.5,15,1);
-                        telemetry.addData("count:",counter);
-                        switch (counter) {
-                            case 0 :
-                                encoderDrive(1,2000,2000,4);
-                                break;
-                            case 1 :
-                                encoderDrive(1,2500,2500,4);
-                                break;
-                            case 2 :
-                                encoderDrive(1,3000,3000,4);
-                                break;
-                            case 3 :
-                                encoderDrive(1,3500,3500,4);
-                                break;
-                            case 4 :
-                                encoderDrive(1,4000,4000,4);
-                                break;
-                            case 5 :
-                                encoderDrive(1,4500,450,4);
-                                break;
-                        }
-                        robot.openerRight.setPosition(0);
-                        robot.openerLeft.setPosition(0);
-                        encoderDrive(1,-1000,-1000,2);
-                        robot.openerRight.setPosition(.2);
-                        robot.openerLeft.setPosition(.2);
-                        runtime.reset();
-                        while (opModeIsActive()) {};
-                    } else {
-                        encoderDrive(.5, -350, -350, 2);
-                        counter++;
-                    }
-                    runtime.reset();
-                    while (opModeIsActive() && runtime.seconds() <=1) {}
-                }
-                }
+//            encoderAccessory(1,);
+//            int counter = 0;
+//            while (opModeIsActive()) {
+//                while (!found && opModeIsActive()) {
+//                if (tfod != null) {
+//                    // getUpdatedRecognitions() will return null if no new information is available since
+//                    // the last time that call was made.
+//                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+//                    if (updatedRecognitions != null) {
+//                        telemetry.addData("# Object Detected", updatedRecognitions.size());
+//                        // step through the list of recognitions and display boundary info.
+//                            int i = 0;
+//                            for (Recognition recognition : updatedRecognitions) {
+//                                telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
+//                                telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
+//                                        recognition.getLeft(), recognition.getTop());
+//                                telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
+//                                        recognition.getRight(), recognition.getBottom());
+//                                if (recognition.getLabel().equals("Stone")) {
+//                                    found = false;
+////                                    encoderDrive(.5, -850, -850, 2);
+//                                } else if (recognition.getLabel().equals("Skystone")) {
+//                                    found = true;
+//                                    telemetry.addLine("found");
+//                                    telemetry.addData("key: ", key);
+//                                    break;
+//                                }
+//                                i++;
+//                            }
+//                        }
+//                        telemetry.update();
+//                    }
+//                    if (found) {
+//                        if (tfod != null) {
+//                            tfod.shutdown();
+//                        }
+//
+////                        encoderDrive(1,500,500,1);
+////                        encoderDrive(1,-200,-200,.5);
+//                        telemetry.addData("count:",counter);
+//                        switch (counter) {
+//                            case 0 :
+//                                encoderDrive(1,-92,-92,.5);
+//                                encoderDrive(1,-520,520,2);
+//                                encoderDrive(.5,-475,-475,.5);
+//                                encoderAccessory(.35,545);
+//                                encoderAccessory(.5,-50);
+//                                runtime.reset();
+//                                while (opModeIsActive() && runtime.seconds() < 1) {}
+//                                encoderDrive(1,975,975,1);
+////                                encoderAccessory(1,-50);
+//                                encoderDrive(1,-1085,0,1);
+//                                encoderAccessory(.3,-150);
+//                                robot.pivot.setPower(.02);
+//                                encoderDrive(1,-2150,-2150,2);
+//                                encoderAccessory(.3,-400);
+//                                encoderDrive(1,1300,1300,2);
+//                                while (opModeIsActive()) {}
+//                                break;
+//                            case 1 :
+//                                encoderDrive(1,-525,525,2);
+//                                encoderDrive(.5,-485,-485,.5);
+//                                encoderAccessory(.35,545);
+//                                encoderAccessory(.5,-50);
+//                                runtime.reset();
+//                                while (opModeIsActive() && runtime.seconds() < 1) {}
+//                                encoderDrive(1,950,950,1);
+////                                encoderAccessory(1,-50);
+//                                encoderDrive(1,-1300,0,1);
+//                                encoderAccessory(.3,-150);
+//                                robot.pivot.setPower(.02);
+//                                encoderDrive(1,-2470,-2470,2);
+//                                encoderAccessory(.3,-400);
+//                                encoderDrive(1,1300,1300,2);
+//                                while (opModeIsActive()) {}
+//                                break;
+//                            case 2 :
+//                                encoderDrive(1,75,75,.5);
+//                                encoderDrive(1,-540,540,2);
+//                                encoderDrive(.5,-475,-475,.5);
+//                                encoderAccessory(.35,545);
+//                                encoderAccessory(.5,-50);
+//                                runtime.reset();
+//                                while (opModeIsActive() && runtime.seconds() < 1) {}
+//                                encoderDrive(1,910,910,1);
+////                                encoderAccessory(1,-50);
+//                                encoderDrive(1,-1100,0,1);
+//                                encoderAccessory(.3,-150);
+//                                robot.pivot.setPower(.02);
+//                                encoderDrive(1,-2790,-2790,2);
+//                                encoderAccessory(.3,-400);
+//                                encoderDrive(1,750,750,2);
+//                                while (opModeIsActive()) {}
+//                                break;
+//                            case 3 :
+//                                encoderDrive(1,-540,540,2);
+//                                encoderDrive(.5,-475,-475,.5);
+//                                encoderAccessory(.35,545);
+//                                encoderAccessory(.5,-50);
+//                                runtime.reset();
+//                                while (opModeIsActive() && runtime.seconds() < 1) {}
+//                                encoderDrive(1,950,950,1);
+////                                encoderAccessory(1,-50);
+//                                encoderDrive(1,-1065,0,1);
+//                                encoderAccessory(.3,-150);
+//                                robot.pivot.setPower(.02);
+//                                encoderDrive(1,-3110,-3110,2);
+//                                encoderAccessory(.3,-400);
+//                                encoderDrive(1,750,750,2);
+//                                while (opModeIsActive()) {}
+//                                break;
+//                            case 4 :
+//                                encoderDrive(1,-540,540,2);
+//                                encoderDrive(.5,-475,-475,.5);
+//                                encoderAccessory(.35,545);
+//                                encoderAccessory(.5,-50);
+//                                runtime.reset();
+//                                while (opModeIsActive() && runtime.seconds() < 1) {}
+//                                encoderDrive(1,925,925,1);
+////                                encoderAccessory(1,-50);
+//                                encoderDrive(1,-1065,0,1);
+//                                encoderAccessory(.3,-150);
+//                                robot.pivot.setPower(.02);
+//                                encoderDrive(1,-3430,-3430,2);
+//                                encoderAccessory(.3,-400);
+//                                encoderDrive(1,750,750,2);
+//                                while (opModeIsActive()) {}
+//                                break;
+//                            case 5 :
+//                                encoderDrive(1,-540,540,2);
+//                                encoderDrive(.5,-475,-475,.5);
+//                                encoderAccessory(.35,545);
+//                                encoderAccessory(.5,-50);
+//                                runtime.reset();
+//                                while (opModeIsActive() && runtime.seconds() < 1) {}
+//                                encoderDrive(1,875,875,1);
+////                                encoderAccessory(1,-50);
+//                                encoderDrive(1,-1065,0,1);
+//                                encoderAccessory(.3,-150);
+//                                robot.pivot.setPower(.02);
+//                                encoderDrive(1,-3950,-3950,2);
+//                                encoderAccessory(.3,-400);
+//                                encoderDrive(1,750,750,2);
+//                                while (opModeIsActive()) {}
+//                                break;
+//                        }
+//
+//                    } else {
+//                        encoderDrive(1, -440, -440, 2);
+//                        counter++;
+//                    }
+//                    runtime.reset();
+//                    while (opModeIsActive() && runtime.seconds() <=1) {}
+//                }
+//                }
             }
         }
 
@@ -322,7 +385,7 @@ public class OctAutoRight extends LinearOpMode {
         int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
                 "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minimumConfidence = 0.45;
+        tfodParameters.minimumConfidence = 0.35;
         tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
         tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_FIRST_ELEMENT, LABEL_SECOND_ELEMENT);
     }
@@ -421,29 +484,48 @@ public class OctAutoRight extends LinearOpMode {
                         robot.frontRight.getCurrentPosition());
                 telemetry.update();
             }
+            robot.frontLeft.setPower(0);
+            robot.frontRight.setPower(0);
+            robot.backLeft.setPower(0);
+            robot.backRight.setPower(0);
 
         }
     }
 
-    public void encoderAccessory(double speed, double encoderAmount) {
+    public void encoderAccessory(double speed, double encoderAmount, double key) {
         int newSlideTarget;
         int newPivotTarget;
         robot.pivot.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.pivot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.elevator.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        robot.elevator.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Ensure that the opmode is still active
         if (opModeIsActive()) {
 
             // Determine new target position, and pass to motor controller
-            newPivotTarget = robot.pivot.getCurrentPosition() + (int)(-encoderAmount);// * COUNTS_PER_INCH);
-            robot.pivot.setTargetPosition(newPivotTarget);
+            if (key == 0) {
+                newPivotTarget = robot.pivot.getCurrentPosition() + (int) (-encoderAmount);// * COUNTS_PER_INCH);
+                robot.pivot.setTargetPosition(newPivotTarget);
+                robot.pivot.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                runtime.reset();
+                robot.pivot.setPower(Math.abs(Math.abs(speed)));
+                while (opModeIsActive() && (robot.pivot.isBusy())) {}
+                robot.pivot.setPower(0);
+            } else if (key == 1) {
+                newSlideTarget = robot.elevator.getCurrentPosition() + (int) (-encoderAmount);// * COUNTS_PER_INCH);
+                robot.elevator.setTargetPosition(newSlideTarget);
+                robot.elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                runtime.reset();
+                robot.elevator.setPower(Math.abs(Math.abs(speed)));
+                while (opModeIsActive() && (robot.elevator.isBusy())) {}
+                robot.elevator.setPower(0);
 
-            robot.pivot.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            }
 
 
             // reset the timeout time and start motion.
-            runtime.reset();
-            robot.pivot.setPower(Math.abs(Math.abs(speed)));
+
 
             // keep looping while we are still active, and there is time left, and both motors are running.
             // Note: We use (isBusy() && isBusy()) in the loop test, which means that when EITHER motor hits
